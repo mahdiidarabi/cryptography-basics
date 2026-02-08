@@ -1,142 +1,121 @@
-def integer_sqrt(n):
-    """
-    Calculate integer square root of n using binary search.
-    
-    Args:
-        n: Non-negative integer
-    
-    Returns:
-        Largest integer x such that x*x <= n
-    """
-    if n == 0:
-        return 0
-    if n == 1:
-        return 1
-    
-    left = 1
-    right = n
-    
-    while left <= right:
-        mid = (left + right) // 2
-        square = mid * mid
-        
-        if square == n:
-            return mid
-        elif square < n:
-            left = mid + 1
-        else:
-            right = mid - 1
-    
-    return right
+# ============================================================================
+# GENERATOR AND FACTORIZATION UTILITIES FOR CRYPTOGRAPHY
+# ============================================================================
+# Generators (also called primitive roots) are super important in crypto!
+# They help us create cyclic groups which are used in:
+# - Diffie-Hellman key exchange
+# - ElGamal encryption
+# - Digital signatures (DSA)
+# - And many other protocols
+# ============================================================================
+
+import math
 
 
 def factorize(n):
     """
-    Factorize a number into its prime factors.
-    Implemented without using any libraries or built-in functions.
+    Factorize a number into its prime factors with their powers.
+    
+    Example: 12 = 2^2 * 3^1, so we return {2: 2, 3: 1}
+    
+    Why is this important in crypto?
+    - We need to factorize (P-1) to find generators
+    - The security of RSA depends on factoring being hard
+    - Understanding factors helps us understand group structure
     
     Args:
-        n: Integer to factorize
+        n: The number to factorize (must be positive)
     
     Returns:
-        Dictionary with prime factors as keys and their powers as values
-    
-    Example:
-        >>> factorize(12)
-        {2: 2, 3: 1}
+        Dictionary: {prime_factor: power, ...}
+        Example: factorize(12) returns {2: 2, 3: 1}
     """
     if n < 1:
         raise ValueError("Number must be positive")
+    
+    # 1 has no prime factors
     if n == 1:
         return {}
     
+    # This dictionary will store our factors: {prime: power}
     factors = {}
-    original_n = n
     
-    # Check for factor 2
+    # Step 1: Check if 2 is a factor (handle even numbers)
+    # We do this separately because 2 is the only even prime
     count_2 = 0
     while n % 2 == 0:
-        count_2 = count_2 + 1
-        n = n // 2
+        count_2 += 1
+        n = n // 2  # Divide n by 2
+    
+    # If we found some 2's, add them to our factors
     if count_2 > 0:
         factors[2] = count_2
     
-    # Check for odd factors
-    sqrt_n = integer_sqrt(n)
-    i = 3
+    # Step 2: Check odd factors from 3 onwards
+    # We only need to check up to sqrt(n) because:
+    # If n = a * b and both a and b > sqrt(n), then a * b > n (impossible!)
+    sqrt_n = int(math.isqrt(n))
+    i = 3  # Start from 3 (first odd prime after 2)
+    
     while i <= sqrt_n:
         count_i = 0
+        
+        # Count how many times i divides n
         while n % i == 0:
-            count_i = count_i + 1
+            count_i += 1
             n = n // i
+        
+        # If i is a factor, add it to our dictionary
         if count_i > 0:
             factors[i] = count_i
-            sqrt_n = integer_sqrt(n)
-        i = i + 2
+            # Update sqrt_n because n got smaller
+            sqrt_n = int(math.isqrt(n))
+        
+        # Move to next odd number
+        i += 2
     
-    # If n is still greater than 1, it's a prime factor
+    # Step 3: If n is still > 1, it's a prime factor itself
+    # This happens when n is prime or has one large prime factor
     if n > 1:
         if n in factors:
-            factors[n] = factors[n] + 1
+            factors[n] += 1
         else:
             factors[n] = 1
     
     return factors
 
 
-def number_to_string(num):
-    """
-    Convert a number to string manually without using str().
-    """
-    if num == 0:
-        return "0"
-    
-    digits = []
-    n = num
-    while n > 0:
-        digits.append(n % 10)
-        n = n // 10
-    
-    result = ""
-    for i in range(len(digits) - 1, -1, -1):
-        result = result + chr(ord('0') + digits[i])
-    
-    return result
-
-
 def get_prime_factors(n):
     """
-    Get only the prime factors of a number (without their powers).
-    Uses the factorize function.
+    Get only the prime factors (without their powers).
+    
+    Example: 12 = 2^2 * 3^1, so we return [2, 3] (not [2, 2, 3])
+    
+    This is useful when we only care about which primes divide n,
+    not how many times.
     
     Args:
-        n: Integer to factorize
+        n: The number to factorize
     
     Returns:
-        List of prime factors (e.g., [2, 3] for 144)
-    
-    Example:
-        >>> get_prime_factors(144)
-        [2, 3]
-        >>> get_prime_factors(12)
-        [2, 3]
-        >>> get_prime_factors(7)
-        [7]
+        List of prime factors (sorted)
     """
-    factors = factorize(n)
+    # First get the full factorization
+    factors_dict = factorize(n)
     
-    if len(factors) == 0:
+    # If no factors, return empty list
+    if len(factors_dict) == 0:
         return []
     
-    # Extract prime factors (keys from the dictionary)
-    primes = []
-    for prime in factors:
-        primes.append(prime)
+    # Extract just the prime numbers (keys of the dictionary)
+    primes = list(factors_dict.keys())
     
-    # Sort primes manually using bubble sort
+    # Sort them (simple approach - in real code we'd use sorted())
+    # Using bubble sort because it's simple to understand
     for i in range(len(primes)):
         for j in range(len(primes) - 1 - i):
             if primes[j] > primes[j + 1]:
+                # Swap them
                 temp = primes[j]
                 primes[j] = primes[j + 1]
                 primes[j + 1] = temp
@@ -146,178 +125,206 @@ def get_prime_factors(n):
 
 def format_factorization(n):
     """
-    Get the prime factorization of a number in formatted string format.
-    Implemented without using libraries or built-in functions like str().
+    Get the prime factorization as a nice string.
+    
+    Example: format_factorization(12) returns "2^2 * 3"
+    
+    This is just for display purposes - makes it easier to read.
     
     Args:
-        n: Integer to factorize
+        n: The number to factorize
     
     Returns:
-        Formatted string representation (e.g., "2^2 * 3")
-    
-    Example:
-        >>> format_factorization(12)
-        '2^2 * 3'
-        >>> format_factorization(8)
-        '2^3'
-        >>> format_factorization(7)
-        '7'
+        String like "2^2 * 3" or "7" or "2^3"
     """
     factors = factorize(n)
     
+    # Special case: 1 has no factors
     if len(factors) == 0:
         return "1"
     
-    # Sort primes manually using bubble sort
-    primes = []
-    for prime in factors:
-        primes.append(prime)
+    # Sort the primes
+    primes = sorted(factors.keys())
     
-    for i in range(len(primes)):
-        for j in range(len(primes) - 1 - i):
-            if primes[j] > primes[j + 1]:
-                temp = primes[j]
-                primes[j] = primes[j + 1]
-                primes[j + 1] = temp
-    
-    # Build result string
+    # Build the string
     parts = []
     for prime in primes:
         power = factors[prime]
-        prime_str = number_to_string(prime)
-        
         if power == 1:
-            parts.append(prime_str)
+            # If power is 1, just write the prime (e.g., "3" not "3^1")
+            parts.append(str(prime))
         else:
-            power_str = number_to_string(power)
-            parts.append(prime_str + "^" + power_str)
+            # If power > 1, write it with exponent (e.g., "2^2")
+            parts.append(f"{prime}^{power}")
     
-    # Join parts with " * " manually
-    result = ""
-    for i in range(len(parts)):
-        if i > 0:
-            result = result + " * "
-        result = result + parts[i]
+    # Join all parts with " * "
+    return " * ".join(parts)
+
+
+def modular_power(base, exponent, modulus):
+    """
+    Calculate (base^exponent) mod modulus using fast exponentiation.
+    
+    This is SUPER important in cryptography! We use it everywhere:
+    - RSA encryption/decryption
+    - Diffie-Hellman key exchange
+    - Digital signatures
+    - And many more...
+    
+    Why "fast" exponentiation? Instead of multiplying base by itself
+    exponent times (which is slow), we use binary method.
+    
+    Example: 3^13 mod 7
+    - Normal way: 3 * 3 * 3 * ... * 3 (13 times) = too slow!
+    - Fast way: Use binary representation of 13 = 1101
+      We compute 3^1, 3^2, 3^4, 3^8 and combine them
+    
+    Args:
+        base: The base number
+        exponent: The power to raise base to
+        modulus: The modulus (usually a prime in crypto)
+    
+    Returns:
+        (base^exponent) mod modulus
+    """
+    # Special case: anything mod 1 is 0
+    if modulus == 1:
+        return 0
+    
+    # Start with result = 1
+    result = 1
+    
+    # Reduce base modulo modulus first (makes numbers smaller)
+    base = base % modulus
+    
+    # Make sure exponent is an integer
+    exp = int(exponent)
+    
+    # Fast exponentiation algorithm (also called "square and multiply")
+    # The idea: write exponent in binary, then square base repeatedly
+    while exp > 0:
+        # If current bit is 1, multiply result by base
+        if exp % 2 == 1:
+            result = (result * base) % modulus
+        
+        # Square the base (this corresponds to next bit in binary)
+        base = (base * base) % modulus
+        
+        # Move to next bit (divide exponent by 2)
+        exp = exp // 2
     
     return result
 
 
 def divide_prime_by_factors_of_p_minus_one(P):
     """
-    Get a prime number P, calculate prime factors of (P-1),
-    then return (P-1) divided by each prime factor of (P-1).
+    Calculate (P-1) divided by each prime factor of (P-1).
     
-    Uses get_prime_factors function.
+    This is a key step in finding generators (primitive roots)!
+    
+    Why do we need this?
+    - To check if a number g is a generator, we need to verify:
+      g^((P-1)/q) != 1 (mod P) for all prime factors q of (P-1)
+    - So we need to compute (P-1)/q for each prime factor q
+    
+    Example: P = 7
+    - P-1 = 6
+    - Prime factors of 6: [2, 3]
+    - (P-1)/2 = 6/2 = 3
+    - (P-1)/3 = 6/3 = 2
+    - So we return [3, 2]
     
     Args:
-        P: Prime number
+        P: A prime number
     
     Returns:
-        List of (P-1) divided by each prime factor of (P-1)
-    
-    Example:
-        >>> divide_prime_by_factors_of_p_minus_one(7)
-        [3.0, 2.0]  # 6/2 and 6/3, since 6 = 2 * 3
-        >>> divide_prime_by_factors_of_p_minus_one(11)
-        [5.0, 2.0]  # 10/2 and 10/5, since 10 = 2 * 5
+        List of (P-1)/q for each prime factor q of (P-1)
     """
     # Calculate P-1
+    # In finite fields, P-1 is the size of the multiplicative group
     p_minus_one = P - 1
     
-    # Get prime factors of (P-1)
-    factors = get_prime_factors(p_minus_one)
+    # Get all prime factors of (P-1)
+    prime_factors = get_prime_factors(p_minus_one)
     
     # Calculate (P-1) divided by each factor
     results = []
-    for factor in factors:
-        result = p_minus_one / factor
+    for factor in prime_factors:
+        result = p_minus_one // factor  # Integer division
         results.append(result)
     
     return results
 
 
-def modular_power(base, exponent, modulus):
-    """
-    Calculate (base^exponent) mod modulus using fast exponentiation.
-    Implemented manually without using libraries.
-    
-    Args:
-        base: Base number
-        exponent: Exponent (should be integer)
-        modulus: Modulus
-    
-    Returns:
-        (base^exponent) mod modulus
-    """
-    if modulus == 1:
-        return 0
-    
-    result = 1
-    base = base % modulus
-    
-    # Convert exponent to integer if it's a float
-    exp = int(exponent)
-    
-    while exp > 0:
-        if exp % 2 == 1:
-            result = (result * base) % modulus
-        exp = exp // 2
-        base = (base * base) % modulus
-    
-    return result
-
-
 def find_generators(P):
     """
-    Find generators of the multiplicative group modulo P.
+    Find all generators (primitive roots) of the multiplicative group modulo P.
     
-    A generator g satisfies: g^((P-1)/q) != 1 (mod P) for all prime factors q of (P-1).
+    This is one of the most important functions in this file!
     
-    Uses divide_prime_by_factors_of_p_minus_one(P) and checks for each i from 1 to P-1.
+    What is a generator?
+    - A generator g is a number such that {g^0, g^1, g^2, ..., g^(P-2)} 
+      gives us ALL numbers from 1 to P-1
+    - In other words, g "generates" the entire multiplicative group
+    
+    Why are generators important in crypto?
+    - Diffie-Hellman uses generators for key exchange
+    - ElGamal encryption needs generators
+    - Many protocols rely on generators
+    
+    How do we find generators?
+    - A number g is a generator if: g^((P-1)/q) != 1 (mod P)
+      for ALL prime factors q of (P-1)
+    - This is based on Lagrange's theorem from group theory
+    
+    Example: P = 7
+    - P-1 = 6, prime factors of 6: [2, 3]
+    - We need to check: g^(6/2) = g^3 != 1 and g^(6/3) = g^2 != 1
+    - Generators of Z_7*: [3, 5]
     
     Args:
-        P: Prime number
+        P: A prime number
     
     Returns:
-        List of generators (primitive roots) modulo P
-    
-    Example:
-        >>> find_generators(7)
-        [3, 5]  # Generators of Z_7*
+        List of all generators (primitive roots) modulo P
     """
-    # Get (P-1) divided by each prime factor of (P-1)
+    # Get (P-1)/q for each prime factor q of (P-1)
+    # These are the exponents we need to check
     divisors = divide_prime_by_factors_of_p_minus_one(P)
     
-    # Convert divisors to integers (they should be integers)
-    int_divisors = []
-    for d in divisors:
-        int_divisors.append(int(d))
+    # Convert to integers (they should already be integers, but just to be safe)
+    int_divisors = [int(d) for d in divisors]
     
+    # This list will store all generators we find
     generators = []
     
-    # Iterate from 1 to P-1
-    for i in range(1, P):
+    # Check every number from 1 to P-1
+    # (0 is not in the multiplicative group, so we start from 1)
+    for candidate in range(1, P):
         is_generator = True
         
-        # Check if i^divisor mod P != 1 for all divisors
+        # Check if candidate^divisor mod P != 1 for all divisors
+        # If ANY divisor gives us 1, then candidate is NOT a generator
         for divisor in int_divisors:
-            power_result = modular_power(i, divisor, P)
+            power_result = modular_power(candidate, divisor, P)
+            
+            # If we get 1, this candidate is not a generator
+            # (it means the order of candidate is smaller than P-1)
             if power_result == 1:
                 is_generator = False
-                break
+                break  # No need to check other divisors
         
-        # If all powers are not 1, i is a generator
+        # If all checks passed, candidate is a generator!
         if is_generator:
-            generators.append(i)
+            generators.append(candidate)
     
     return generators
 
 
 if __name__ == "__main__":
-    # Example usage
-    test_numbers = [2003]
-    
+    # Test the functions
     print("=== Prime Factorization ===\n")
+    test_numbers = [2003]
     for num in test_numbers:
         result = format_factorization(num)
         print(f"{num:4d} = {result}")
@@ -343,4 +350,3 @@ if __name__ == "__main__":
         print(f"P = {P}")
         print(f"  Generators: {generators}")
         print()
-
