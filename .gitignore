@@ -247,3 +247,9 @@ tmp/
 
 # Note: go.sum should typically be committed to version control
 # for reproducible builds, so it's not ignored here
+
+# ============================================
+# Node.js / zk2
+# ============================================
+node_modules/
+js/

@@ -1,0 +1,10 @@
+{
+  "name": "zk2-hash-preimage",
+  "version": "1.0.0",
+  "description": "ZK proof of hash preimage using circom and snarkjs",
+  "dependencies": {
+    "circomlib": "^2.0.5",
+    "circomlibjs": "^0.1.7",
+    "snarkjs": "^0.7.0"
+  }
+}
