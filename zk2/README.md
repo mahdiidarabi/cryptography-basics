@@ -12,30 +12,25 @@ Prove you know `r` and `j` such that **Poseidon(r) equals the j'th hash** in a p
 
 Circuit uses **Poseidon** from circomlib.
 
-## Project structure (like zkBasics)
+## Project structure (lightweight — only source is committed)
 
 ```
 zk2/
 ├── hash_preimage.circom       # Circuit: HashListCheckInternal(n) + Main(10)
 ├── input.json                 # Your input (hashes, r, j) — edit this
-├── hash_preimage.r1cs         # Compiled R1CS
-├── hash_preimage.sym          # Symbol file
-├── hash_preimage_js/          # Witness generator
-│   ├── generate_witness.js
-│   ├── hash_preimage.wasm
-│   └── witness.wtns           # Generated
-├── snarkjs/                   # Trusted setup
-│   ├── pot12_final.ptau
-│   ├── hash_preimage_0001.zkey
-│   └── hash_preimage_verification_key.json
-├── prover/
-│   ├── proof.json             # Generated proof
-│   └── public.json            # Public output
+├── get_hash.js                # Optional: compute Poseidon(secret) or random
 ├── build.sh
 ├── setup_snarkjs.sh
 ├── prove.sh                   # Uses input.json
-└── verify.sh
+├── verify.sh
+├── package.json
+└── README.md
 ```
+
+Generated (not committed; create with `npm install`, `./build.sh`, `./setup_snarkjs.sh`):
+- `hash_preimage.r1cs`, `hash_preimage.sym`, `hash_preimage_js/` (WASM, witness script)
+- `snarkjs/` (ptau, zkey, verification key)
+- `prover/proof.json`, `prover/public.json` (after `./prove.sh`)
 
 ## Prerequisites
 

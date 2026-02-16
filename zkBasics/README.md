@@ -24,35 +24,24 @@ component main = Multiplier2();
 - **Input signals**: `a`, `b` (private)
 - **Output signal**: `c` (public, computed as `a * b`)
 
-## Project Structure
+## Project structure (lightweight — only source is committed)
 
 ```
 zkBasics/
 ├── Multiplier2.circom          # Circom circuit source code
-├── Multiplier2.r1cs             # Compiled R1CS constraint system
-├── Multiplier2.sym              # Symbol file for debugging
-├── Multiplier2_js/              # JavaScript witness generator
-│   ├── generate_witness.js     # Witness generation script
-│   ├── input.json              # Example input (a=3, b=11)
-│   ├── Multiplier2.wasm        # Compiled WebAssembly
-│   └── witness.wtns            # Generated witness file
-├── Multiplier2_cpp/             # C++ witness generator
-│   ├── main.cpp                # C++ witness generation program
-│   ├── Makefile                # Build configuration
-│   └── ...                     # C++ circuit implementation files
-├── snarkjs/                     # Trusted setup artifacts
-│   ├── pot12_final.ptau        # Powers of Tau final file
-│   ├── multiplier2_0000.zkey   # Proving key (phase 1)
-│   ├── multiplier2_0001.zkey   # Proving key (phase 2)
-│   └── verification_key.json   # Verification key
-├── prover/                      # Proof generation artifacts
-│   ├── proof.json              # Generated proof
-│   └── public.json             # Public inputs/outputs
-└── verifier/                    # Verification artifacts
-    ├── proof.json               # Proof to verify
-    ├── public.json              # Public inputs/outputs
-    └── verification_key.json    # Verification key
+├── Multiplier2_js/
+│   └── input.json              # Example input (a=3, b=11)
+├── prover/                     # (proof.json, public.json generated here)
+├── verifier/                   # (copy proof/public/vkey here to verify)
+├── rsa/                        # RSA examples (separate)
+└── README.md
 ```
+
+Generated (not committed; create by following the workflow below):
+- `Multiplier2.r1cs`, `Multiplier2.sym`, `Multiplier2_js/` (generate_witness.js, .wasm, witness.wtns), `Multiplier2_cpp/` — from **Compile the Circuit**
+- `snarkjs/` (ptau, zkey, verification_key.json) — from **Trusted Setup**
+- `prover/proof.json`, `prover/public.json` — from **Generate Proof**
+- `verifier/` copies — for **Verify Proof**
 
 ## Prerequisites
 
