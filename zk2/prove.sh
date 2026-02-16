@@ -1,25 +1,25 @@
 #!/usr/bin/env bash
 # Generate proof from input.json. Run from zk2/
-# Edit input.json: hashes[10], sn_consume, and private v, j, r_old, sk_old, rho.
+# input.json must include: hashes, sn_consume (public); v, j, r_old, sk_old, rho; r1, rho1, v1, pk1, r2, rho2, v2, pk2 (pour). v = v1 + v2.
 set -e
 
-CIRCUIT=hash_preimage
+CIRCUIT=zcash_pour
 INPUT=input.json
 
 if [ ! -f "$INPUT" ]; then
-  echo "Missing $INPUT. Required: hashes, sn_consume (public); v, j, r_old, sk_old, rho (private). See README."
+  echo "Missing $INPUT. Required: hashes, sn_consume, v, j, r_old, sk_old, rho, r1, rho1, v1, pk1, r2, rho2, v2, pk2 (v = v1 + v2). See README or: node get_hash.js chain ..."
   exit 1
 fi
 
 mkdir -p prover
 echo "Using input: $INPUT"
 echo "Generating witness..."
-node hash_preimage_js/generate_witness.js hash_preimage_js/hash_preimage.wasm "$INPUT" hash_preimage_js/witness.wtns
+node zcash_pour_js/generate_witness.js zcash_pour_js/zcash_pour.wasm "$INPUT" zcash_pour_js/witness.wtns
 
 echo "Creating proof..."
-snarkjs groth16 prove snarkjs/${CIRCUIT}_0001.zkey hash_preimage_js/witness.wtns prover/proof.json prover/public.json
+snarkjs groth16 prove snarkjs/${CIRCUIT}_0001.zkey zcash_pour_js/witness.wtns prover/proof.json prover/public.json
 
 echo ""
 echo "Proof saved to prover/proof.json"
-echo "Public signal (ok): $(cat prover/public.json)"
+echo "Public outputs (cm1, cm2, ok): $(cat prover/public.json)"
 echo "Verify: ./verify.sh"

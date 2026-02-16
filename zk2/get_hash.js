@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Helpers for hash_preimage circuit input.
+ * Helpers for zcash_pour circuit input.
  *
  * Hash definitions (match circuit):
  *   sn_produce = hash(rho || hash(sk_old))
@@ -15,8 +15,8 @@
  *     Read input.json, compute sn_consume and hashes[j], print full JSON.
  *     With --write: overwrite the file (fixes "Only 15 out of 16" witness error).
  *
- *   node get_hash.js chain <sk_old> <rho> <r_old> <v> <j>
- *     Compute full chain and print a valid input.json.
+ *   node get_hash.js chain <sk_old> <rho> <r_old> <v> <j> [v1]
+ *     Full input (spending + pour). v1+v2=v; default v1=2. Output includes r1, rho1, v1, pk1, r2, rho2, v2, pk2.
  *
  *   node get_hash.js single <x>
  *     Compute Poseidon(x). Use for ad-hoc hashes.
@@ -105,6 +105,10 @@ async function main() {
       process.exit(1);
     }
 
+    const vNum = parseInt(String(v), 10);
+    const v1 = data.v1 != null ? String(data.v1) : "1";
+    const v2 = data.v2 != null ? String(data.v2) : String(vNum - parseInt(v1, 10));
+
     const poseidon = await buildPoseidon();
     const F = poseidon.F;
     const pk_old = poseidon([BigInt(sk_old)]);
@@ -123,6 +127,14 @@ async function main() {
       r_old,
       sk_old,
       rho,
+      r1: data.r1 != null ? data.r1 : "1111",
+      rho1: data.rho1 != null ? data.rho1 : "11111",
+      v1,
+      pk1: data.pk1 != null ? data.pk1 : "111111111",
+      r2: data.r2 != null ? data.r2 : "2222",
+      rho2: data.rho2 != null ? data.rho2 : "22222",
+      v2,
+      pk2: data.pk2 != null ? data.pk2 : "222222222",
     };
     const out = JSON.stringify(complete, null, 2);
     if (doWrite) {
@@ -138,12 +150,21 @@ async function main() {
     const sk_old = process.argv[3] || "12345";
     const rho = process.argv[4] || "12345";
     const r_old = process.argv[5] || "13751379";
-    const v = process.argv[6] || "1";
+    const v = process.argv[6] || "5";
     const j = parseInt(process.argv[7] || "0", 10);
+    const v1 = process.argv[8] || "2";  // v1 + v2 must equal v
     if (j < 0 || j > 9) {
       console.error("j must be 0..9");
       process.exit(1);
     }
+    const vNum = parseInt(String(v), 10);
+    const v1Num = parseInt(String(v1), 10);
+    const v2Num = vNum - v1Num;
+    if (v1Num < 0 || v2Num < 0) {
+      console.error("v must be >= 2 and v1 in [1, v-1] so v2 = v - v1 is non-negative");
+      process.exit(1);
+    }
+    const v2 = String(v2Num);
 
     const poseidon = await buildPoseidon();
     const F = poseidon.F;
@@ -164,6 +185,14 @@ async function main() {
       r_old,
       sk_old,
       rho,
+      r1: "1111",
+      rho1: "11111",
+      v1,
+      pk1: "111111111",
+      r2: "2222",
+      rho2: "22222",
+      v2,
+      pk2: "222222222",
     };
     console.log(JSON.stringify(input, null, 2));
     return;
@@ -171,7 +200,7 @@ async function main() {
 
   console.error("Usage: node get_hash.js from-input [input.json]");
   console.error("       node get_hash.js complete-input [input.json] [--write]");
-  console.error("       node get_hash.js chain <sk_old> <rho> <r_old> <v> <j>");
+  console.error("       node get_hash.js chain <sk_old> <rho> <r_old> <v> <j> [v1]  # v1+v2=v, default v1=2");
   console.error("       node get_hash.js single <x>");
   console.error("       node get_hash.js random");
   process.exit(1);

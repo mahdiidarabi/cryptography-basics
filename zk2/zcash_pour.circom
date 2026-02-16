@@ -12,8 +12,9 @@ pragma circom 2.1.0;
 
 include "node_modules/circomlib/circuits/poseidon.circom";
 include "node_modules/circomlib/circuits/comparators.circom";
+include "node_modules/circomlib/circuits/bitify.circom";
 
-template HashListCheckInternal(n) {
+template SpendingCircuit(n) {
     // --- Private inputs (witness only; not exposed in main) ---
     signal input v;   // Verifier's random challenge
     signal input j;   // Index in [0..n-1]: position of that hash in the list
@@ -95,6 +96,62 @@ template HashListCheckInternal(n) {
     ok <== 1;
 }
 
+template PourCircuit(n) {
+    
+    signal input v;
+
+    signal input r1;
+    signal input rho1;
+    signal input v1;
+    signal input pk1;
+
+    signal input r2;
+    signal input rho2;
+    signal input v2;
+    signal input pk2;
+
+    v === v1 + v2;
+
+    // Enforce v1 and v2 are non-negative (in [0, 2^64-1])
+    component v1Bits = Num2Bits(64);
+    v1Bits.in <== v1;
+
+    component v2Bits = Num2Bits(64);
+    v2Bits.in <== v2;
+
+
+    component h1 = Poseidon(2);
+    h1.inputs[0] <== rho1;
+    h1.inputs[1] <== pk1;
+    signal sn_produce_1;
+    sn_produce_1 <== h1.out;
+
+
+    component h2 = Poseidon(2);
+    h2.inputs[0] <== rho2;
+    h2.inputs[1] <== pk2;
+    signal sn_produce_2;
+    sn_produce_2 <== h2.out;
+
+
+    component h11 = Poseidon(3);
+    h11.inputs[0] <== r1;
+    h11.inputs[1] <== sn_produce_1;
+    h11.inputs[2] <== v1;
+    signal output cm1;
+    cm1 <== h11.out;
+
+    component h21 = Poseidon(3);
+    h21.inputs[0] <== r2;
+    h21.inputs[1] <== sn_produce_2;
+    h21.inputs[2] <== v2;
+    signal output cm2;
+    cm2 <== h21.out;
+
+    signal output ok;
+    ok <== 1;
+}
+
 template Main(n) {
     // PUBLIC inputs (part of the statement the verifier checks)
     signal input hashes[n];
@@ -107,10 +164,25 @@ template Main(n) {
     signal input sk_old;
     signal input rho;
 
+
+
+    signal input r1;
+    signal input rho1;
+    signal input v1;
+    signal input pk1;
+
+    signal input r2;
+    signal input rho2;
+    signal input v2;
+    signal input pk2;
+
+    signal output cm1;
+    signal output cm2;
+
     // PUBLIC output
     signal output ok;
 
-    component c = HashListCheckInternal(n);
+    component c = SpendingCircuit(n);
 
     for (var i = 0; i < n; i++) {
         c.hashes[i] <== hashes[i];
@@ -122,7 +194,21 @@ template Main(n) {
     c.sk_old <== sk_old;
     c.rho <== rho;
 
-    ok <== c.ok;
+    component c2 = PourCircuit(n);
+    c2.r1 <== r1;
+    c2.rho1 <== rho1;
+    c2.v1 <== v1;
+    c2.pk1 <== pk1;
+    c2.r2 <== r2;
+    c2.rho2 <== rho2;
+    c2.v2 <== v2;
+    c2.pk2 <== pk2;
+    c2.v <== v;
+
+    cm1 <== c2.cm1;
+    cm2 <== c2.cm2;
+
+    ok <== c.ok * c2.ok;
 }
 
 // ---------------------------------------------------------------------------
