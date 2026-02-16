@@ -31,8 +31,21 @@ A practical introduction to zero-knowledge proofs using [Circom](https://github.
 - Trusted setup with snarkjs
 - Proof generation and verification
 - Complete ZK-SNARK workflow
+- **Lightweight**: only source is committed; build/setup artifacts are generated locally
 
 📖 **[Read the zkBasics README](./zkBasics/README.md)** for step-by-step instructions.
+
+### 📁 [zk2](./zk2/)
+
+Zero-knowledge proof that you know a secret `r` and index `j` such that **Poseidon(r)** equals the j-th hash in a public list of 10 hashes — without revealing `r` or `j`.
+
+**Key Features:**
+- Hash list check circuit (Circom + circomlib Poseidon)
+- Single **input.json** for inputs; optional **get_hash.js** to compute Poseidon(secret) or a random secret
+- Scripts: `build.sh`, `setup_snarkjs.sh`, `prove.sh`, `verify.sh`
+- **Lightweight**: only source and config are committed; run `npm install`, `./build.sh`, `./setup_snarkjs.sh` to regenerate artifacts
+
+📖 **[Read the zk2 README](./zk2/README.md)** for workflow and input format.
 
 ## Getting Started
 
@@ -40,6 +53,7 @@ Each module is self-contained and can be explored independently:
 
 1. **For finite field basics**: Start with [`fieldBasics/`](./fieldBasics/) to understand prime fields, generators, and cyclic groups
 2. **For zero-knowledge proofs**: Start with [`zkBasics/`](./zkBasics/) to learn about ZK-SNARKs and circuit design
+3. **For a hash-based ZK proof**: Use [`zk2/`](./zk2/) to prove knowledge of a preimage in a list (edit `input.json`, run `./prove.sh` and `./verify.sh`)
 
 ## Prerequisites
 
@@ -47,11 +61,11 @@ Each module is self-contained and can be explored independently:
 - Python 3.x
 - Standard library only (no external dependencies)
 
-### zkBasics
+### zkBasics & zk2
 - [Circom](https://docs.circom.io/getting-started/installation/) - Circuit compiler
 - [snarkjs](https://github.com/iden3/snarkjs) - ZK-SNARK implementation
-- Node.js (for JavaScript witness generation)
-- C++ compiler (optional, for C++ witness generation)
+- Node.js (for witness generation and zk2 tooling)
+- C++ compiler (optional, for zkBasics C++ witness only)
 
 ## Learning Path
 
@@ -66,6 +80,10 @@ Each module is self-contained and can be explored independently:
    - Zero-knowledge proof concepts
    - Circuit design with Circom
    - Proof generation and verification
+
+3. Try **zk2** for a hash-based circuit:
+   - Edit `input.json` (hashes, secret `r`, index `j`), use `get_hash.js` for Poseidon(secret) or random
+   - Run `./build.sh`, `./setup_snarkjs.sh`, then `./prove.sh` and `./verify.sh`
 
 ## Mathematical Foundations
 
