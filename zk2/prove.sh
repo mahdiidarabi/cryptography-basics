@@ -1,16 +1,17 @@
 #!/usr/bin/env bash
-# Generate proof from hash_preimage_js/input.json. Run from zk2/
-# Edit hash_preimage_js/input.json (hashes, r, j) so that hashes[j] = Poseidon(r).
+# Generate proof from input.json. Run from zk2/
+# Edit input.json: hashes[10], sn_consume, and private v, j, r_old, sk_old, rho.
 set -e
 
 CIRCUIT=hash_preimage
 INPUT=input.json
 
 if [ ! -f "$INPUT" ]; then
-  echo "Missing $INPUT. Create it with: {\"hashes\": [10 field elements], \"r\": \"<secret>\", \"j\": \"<0..9>\"}"
+  echo "Missing $INPUT. Required: hashes, sn_consume (public); v, j, r_old, sk_old, rho (private). See README."
   exit 1
 fi
 
+mkdir -p prover
 echo "Using input: $INPUT"
 echo "Generating witness..."
 node hash_preimage_js/generate_witness.js hash_preimage_js/hash_preimage.wasm "$INPUT" hash_preimage_js/witness.wtns

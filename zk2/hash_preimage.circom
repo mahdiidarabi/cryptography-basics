@@ -15,21 +15,49 @@ include "node_modules/circomlib/circuits/comparators.circom";
 
 template HashListCheckInternal(n) {
     // --- Private inputs (witness only; not exposed in main) ---
-    signal input r;   // Secret preimage: we will check Poseidon(r) is in the list
+    signal input v;   // Verifier's random challenge
     signal input j;   // Index in [0..n-1]: position of that hash in the list
+    signal input r_old;   // Secret preimage: we will check Poseidon(r) is in the list
+    signal input sk_old;
+    signal input rho;
+    
 
     // --- Public list (wired from main; part of the public statement) ---
     signal input hashes[n];
+    signal input sn_consume;
 
     // --- Output: 1 if Poseidon(r) == hashes[j], else constraint fails ---
     signal output ok;
 
     // --- Step 1: Compute Poseidon(r) ---
     // Same hash as circomlib/circomlibjs; use get_hash.js to compute hashes for input.json
-    component h = Poseidon(1);
-    h.inputs[0] <== r;
-    signal hr;
-    hr <== h.out;
+    component h1 = Poseidon(1);
+    h1.inputs[0] <== sk_old;
+    signal pk_old;
+    pk_old <== h1.out;
+
+
+    component h2 = Poseidon(2);
+    h2.inputs[0] <== rho;
+    h2.inputs[1] <== pk_old;
+    signal sn_produce;
+    sn_produce <== h2.out;
+
+
+    component h3 = Poseidon(2);
+    h3.inputs[0] <== sn_produce;
+    h3.inputs[1] <== sk_old;
+    signal sn_consume_calculated;
+    sn_consume_calculated <== h3.out;
+
+
+    component h4 = Poseidon(3);
+    h4.inputs[0] <== r_old;
+    h4.inputs[1] <== sn_produce;
+    h4.inputs[2] <== v;
+    signal cm_j_calculated;
+    cm_j_calculated <== h4.out;
+
 
     // --- Step 2: Build selectors so that sel[i] === 1 iff j === i ---
     // sel[i] = (j == i) ? 1 : 0  (using IsEqual from comparators)
@@ -51,6 +79,8 @@ template HashListCheckInternal(n) {
     }
     sumSel[n] === 1;
 
+    sn_consume === sn_consume_calculated;
+
     // --- Step 4: selectedHash = sum_i (sel[i] * hashes[i]) = hashes[j] ---
     // Linear combination: only the term with sel[j]=1 survives.
     signal selectedHash[n+1];
@@ -60,7 +90,7 @@ template HashListCheckInternal(n) {
     }
 
     // --- Step 5: Poseidon(r) must equal the selected list element ---
-    hr === selectedHash[n];
+    cm_j_calculated === selectedHash[n];
 
     ok <== 1;
 }
@@ -68,10 +98,14 @@ template HashListCheckInternal(n) {
 template Main(n) {
     // PUBLIC inputs (part of the statement the verifier checks)
     signal input hashes[n];
+    signal input sn_consume;
 
     // PRIVATE inputs (witness only; not revealed)
-    signal input r;
-    signal input j;
+    signal input v;   // Verifier's random challenge
+    signal input j;   // Index in [0..n-1]: position of that hash in the list
+    signal input r_old;   // Secret preimage: we will check Poseidon(r) is in the list
+    signal input sk_old;
+    signal input rho;
 
     // PUBLIC output
     signal output ok;
@@ -81,8 +115,12 @@ template Main(n) {
     for (var i = 0; i < n; i++) {
         c.hashes[i] <== hashes[i];
     }
-    c.r <== r;
+    c.sn_consume <== sn_consume;
+    c.v <== v;
     c.j <== j;
+    c.r_old <== r_old;
+    c.sk_old <== sk_old;
+    c.rho <== rho;
 
     ok <== c.ok;
 }
@@ -115,4 +153,4 @@ template Main(n) {
 // list to be part of the public output.
 // ---------------------------------------------------------------------------
 
-component main {public [hashes]} = Main(10);
+component main {public [hashes, sn_consume]} = Main(10);
