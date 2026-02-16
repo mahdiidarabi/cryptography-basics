@@ -1,81 +1,67 @@
 # zk2
 
-Zero-knowledge proofs using circom and snarkjs.
+Zero-knowledge proofs using Circom and snarkjs — **Hash list check** circuit (same workflow style as [zkBasics](../zkBasics/)).
 
-## Hash preimage proof
+## Overview
 
-Prove you know `r` and `j` such that **Poseidon(r) equals the j'th hash** in a public list of 10 hashes — without revealing `r` or `j`.
-
-### Idea
+Prove you know `r` and `j` such that **Poseidon(r) equals the j'th hash** in a public list of 10 hashes, without revealing `r` or `j`.
 
 - **Private inputs:** `r` (preimage), `j` (index 0–9).
 - **Public input:** `hashes[10]` (list of 10 hashes).
-- **Public output:** `1` (true) if Poseidon(r) = hashes[j], else `0` (false).
+- **Public output:** `ok` = 1 when Poseidon(r) = hashes[j].
 
-The circuit uses **Poseidon** from circomlib (ZK-friendly, same field as the curve).
+Circuit uses **Poseidon** from circomlib.
 
-### Quick start
+## Project structure (like zkBasics)
+
+```
+zk2/
+├── hash_preimage.circom       # Circuit: HashListCheckInternal(n) + Main(10)
+├── input.json                 # Your input (hashes, r, j) — edit this
+├── hash_preimage.r1cs         # Compiled R1CS
+├── hash_preimage.sym          # Symbol file
+├── hash_preimage_js/          # Witness generator
+│   ├── generate_witness.js
+│   ├── hash_preimage.wasm
+│   └── witness.wtns           # Generated
+├── snarkjs/                   # Trusted setup
+│   ├── pot12_final.ptau
+│   ├── hash_preimage_0001.zkey
+│   └── hash_preimage_verification_key.json
+├── prover/
+│   ├── proof.json             # Generated proof
+│   └── public.json            # Public output
+├── build.sh
+├── setup_snarkjs.sh
+├── prove.sh                   # Uses input.json
+└── verify.sh
+```
+
+## Prerequisites
+
+- [Circom](https://docs.circom.io/getting-started/installation/)
+- [snarkjs](https://github.com/iden3/snarkjs) (npm global or in path)
+- Node.js
+
+## Workflow
+
+### 1. Install & compile
 
 ```bash
 cd zk2
 npm install
 ./build.sh
-./setup_snarkjs.sh
-./prove.sh 12345 3
-./verify.sh
 ```
 
-### Step by step
-
-#### 1. Install & compile
-
-```bash
-cd zk2
-npm install
-./build.sh
-```
-
-Or manually:
-
-```bash
-circom hash_preimage.circom --r1cs --wasm --sym -o . -l node_modules
-```
-
-#### 2. Trusted setup (powers of tau + zkey)
+### 2. Trusted setup (one-time)
 
 ```bash
 ./setup_snarkjs.sh
 ```
 
-Uses existing `snarkjs/pot12_final.ptau` from the multiplier, or downloads Hermez pot12.
+### 3. Edit `input.json`
 
-#### 3. Prove
-
-```bash
-./prove.sh [r] [j]
-# default: r=12345, j=0
-```
-
-- Builds a list of 10 hashes with `hashes[j] = Poseidon(r)` via circomlibjs
-- Generates witness and Groth16 proof
-- Output: `prover/proof.json`, `prover/public.json` (public output: ok = 1)
-
-#### 4. Verify
-
-```bash
-./verify.sh
-```
-
-Checks the proof against the public output (ok = 1).
-
-### Generate input for custom r and j
-
-```bash
-node get_input.js 12345 3
-# Outputs JSON: { hashes, r, j } with hashes[j] = Poseidon(r)
-```
-
-Or create `hash_preimage_js/input.json` manually:
+Use a single **input.json** at the project root. Format:
 
 ```json
 {
@@ -85,27 +71,42 @@ Or create `hash_preimage_js/input.json` manually:
 }
 ```
 
-### Prove with a list of 9 other hashes
+- `hashes`: array of 10 field elements (strings). Must satisfy **hashes[j] = Poseidon(r)**.
+- `r`: secret preimage (string).
+- `j`: index in 0–9 (string).
 
-If you have 9 hashes in `other_hashs.json` and want to prove your secret's hash is among the 10 (9 + yours):
+You can set 9 entries to `"0"` and put `Poseidon(r)` at index `j`, or use any 10 hashes as long as the j-th equals Poseidon(r).
+
+### 4. Prove
 
 ```bash
-./prove_with_list.sh <your_secret> [others.json]
-# Default others file: other_hashs.json
+./prove.sh
+```
+
+Reads **input.json**, generates witness and proof → `prover/proof.json`, `prover/public.json`.
+
+### 5. Verify
+
+```bash
 ./verify.sh
 ```
 
-### Files
+## Circuit layout
+
+In **hash_preimage.circom**:
+
+- **HashListCheckInternal(n)** — private `r`, `j`; public `hashes[n]`; constrains Poseidon(r) = hashes[j] via selectors; outputs `ok=1`.
+- **Main(10)** — public `hashes[10]`, private `r`, `j`; public output `ok`.
+
+## Files
 
 | File | Purpose |
 |------|---------|
-| `hash_preimage.circom` | Circuit: Main(10), Poseidon(r) == hashes[j] → ok=1 |
-| `get_input.js` | Build input with hashes[j] = Poseidon(r) |
-| `get_input_with_others.js` | Build input from 9 hashes in file + secret |
-| `prove_with_list.sh` | Prove with other_hashs.json + your secret |
+| `hash_preimage.circom` | Circuit source |
+| `input.json` | Input (hashes, r, j) — single place to edit |
 | `build.sh` | Compile circuit |
-| `setup_snarkjs.sh` | Trusted setup (ptau, zkey) |
-| `prove.sh` | Generate proof |
+| `setup_snarkjs.sh` | Trusted setup |
+| `prove.sh` | Generate proof from input.json |
 | `verify.sh` | Verify proof |
 
-Verifier sees the proof and ok=1; they never see `r` or `j`.
+Verifier sees the proof and `ok=1`; they do not see `r` or `j`.

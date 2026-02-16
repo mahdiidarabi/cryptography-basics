@@ -75,4 +75,4 @@ template Main(n) {
     ok <== c.ok;
 }
 
-component main = Main(10);
+component main {public [hashes]} = Main(10);
