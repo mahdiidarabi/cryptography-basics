@@ -1,24 +1,46 @@
 #!/usr/bin/env bash
-# Generate proof from hash_preimage_js/input.json. Run from zk2/
-# Edit hash_preimage_js/input.json (hashes, r, j) so that hashes[j] = Poseidon(r).
+# Generate proof from input. Run from zk2/
+#
+# Equivalent to Circom doc (input.json or input_zcash_pour.json; proof/public in prover/):
+#   node zcash_pour_js/generate_witness.js zcash_pour_js/zcash_pour.wasm input.json witness.wtns
+#   snarkjs groth16 prove zcash_pour_0001.zkey witness.wtns proof.json public.json
 set -e
 
-CIRCUIT=hash_preimage
-INPUT=input.json
+CIRCUIT=zcash_pour
+WITNESS_DIR="${CIRCUIT}_js"
+PROVER_DIR=prover
+SNARKJS_DIR=snarkjs
 
-if [ ! -f "$INPUT" ]; then
-  echo "Missing $INPUT. Create it with: {\"hashes\": [10 field elements], \"r\": \"<secret>\", \"j\": \"<0..9>\"}"
+# Use input.json by default; fall back to input_zcash_pour.json if you use that name
+if [ -f "input.json" ]; then
+  INPUT_FILE=input.json
+elif [ -f "input_zcash_pour.json" ]; then
+  INPUT_FILE=input_zcash_pour.json
+else
+  echo "Error: No input file found. Create input.json or input_zcash_pour.json (see README)."
   exit 1
 fi
 
-echo "Using input: $INPUT"
-echo "Generating witness..."
-node hash_preimage_js/generate_witness.js hash_preimage_js/hash_preimage.wasm "$INPUT" hash_preimage_js/witness.wtns
+mkdir -p "$PROVER_DIR"
 
+if [ ! -f "$WITNESS_DIR/$CIRCUIT.wasm" ]; then
+  echo "Error: $WITNESS_DIR/$CIRCUIT.wasm not found. Run ./build.sh first."
+  exit 1
+fi
+if [ ! -f "$SNARKJS_DIR/${CIRCUIT}_0001.zkey" ]; then
+  echo "Error: $SNARKJS_DIR/${CIRCUIT}_0001.zkey not found. Run ./setup_snarkjs.sh first."
+  exit 1
+fi
+
+# Generate witness (doc: generate_witness.js wasm input.json witness.wtns)
+echo "Generating witness from $INPUT_FILE..."
+node "$WITNESS_DIR/generate_witness.js" "$WITNESS_DIR/$CIRCUIT.wasm" "$INPUT_FILE" "$WITNESS_DIR/witness.wtns"
+
+# Generate proof (doc: groth16 prove zkey witness.wtns proof.json public.json)
 echo "Creating proof..."
-snarkjs groth16 prove snarkjs/${CIRCUIT}_0001.zkey hash_preimage_js/witness.wtns prover/proof.json prover/public.json
+snarkjs groth16 prove "$SNARKJS_DIR/${CIRCUIT}_0001.zkey" "$WITNESS_DIR/witness.wtns" "$PROVER_DIR/proof.json" "$PROVER_DIR/public.json"
 
 echo ""
-echo "Proof saved to prover/proof.json"
-echo "Public signal (ok): $(cat prover/public.json)"
+echo "Proof: $PROVER_DIR/proof.json"
+echo "Public: $PROVER_DIR/public.json"
 echo "Verify: ./verify.sh"
