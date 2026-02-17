@@ -99,6 +99,9 @@ template pour_circuit() {
     signal input v2;
     signal input pk2;
 
+
+    signal output ok;
+
     v === v1 + v2;
 
     // v1, v2 non-negative and fit in 32 bits (0 <= v1, v2 < 2^32)
@@ -132,6 +135,8 @@ template pour_circuit() {
     h21.inputs[1] <== sn_produce_2;
     h21.inputs[2] <== v2;
     signal output cm2 <== h21.out;
+
+    ok <== 1;
 }
 
 template Main(n) {
@@ -187,7 +192,7 @@ template Main(n) {
     }
     c.sn_consume <== sn_consume;
 
-    ok <== c.ok;
+    ok <== c.ok * p.ok;
 }
 
 component main {public [cm_list, sn_consume]} = Main(10);
