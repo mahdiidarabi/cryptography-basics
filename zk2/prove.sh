@@ -1,25 +1,28 @@
 #!/usr/bin/env bash
-# Generate a proof from input.json. Run from zk2/
-# input.json must contain all circuit inputs (see README). Ensure v = v1 + v2.
+# Generate proof from input. Run from zk2/
+#
+# Equivalent to Circom doc (input.json or input_zcash_pour.json; proof/public in prover/):
+#   node zcash_pour_js/generate_witness.js zcash_pour_js/zcash_pour.wasm input.json witness.wtns
+#   snarkjs groth16 prove zcash_pour_0001.zkey witness.wtns proof.json public.json
 set -e
 
 CIRCUIT=zcash_pour
-INPUT_FILE=input.json
 WITNESS_DIR="${CIRCUIT}_js"
 PROVER_DIR=prover
 SNARKJS_DIR=snarkjs
 
-# Create prover directory so we can write proof and public signals there
-mkdir -p "$PROVER_DIR"
-
-# Check input file exists
-if [ ! -f "$INPUT_FILE" ]; then
-  echo "Error: $INPUT_FILE not found."
-  echo "Create it (see README) or run: node get_hash.js chain <sk_old> <rho> <r_old> <v> <j> [v1]"
+# Use input.json by default; fall back to input_zcash_pour.json if you use that name
+if [ -f "input.json" ]; then
+  INPUT_FILE=input.json
+elif [ -f "input_zcash_pour.json" ]; then
+  INPUT_FILE=input_zcash_pour.json
+else
+  echo "Error: No input file found. Create input.json or input_zcash_pour.json (see README)."
   exit 1
 fi
 
-# Check we have the compiled circuit and keys
+mkdir -p "$PROVER_DIR"
+
 if [ ! -f "$WITNESS_DIR/$CIRCUIT.wasm" ]; then
   echo "Error: $WITNESS_DIR/$CIRCUIT.wasm not found. Run ./build.sh first."
   exit 1
@@ -29,15 +32,15 @@ if [ ! -f "$SNARKJS_DIR/${CIRCUIT}_0001.zkey" ]; then
   exit 1
 fi
 
-# Generate witness from input
+# Generate witness (doc: generate_witness.js wasm input.json witness.wtns)
 echo "Generating witness from $INPUT_FILE..."
 node "$WITNESS_DIR/generate_witness.js" "$WITNESS_DIR/$CIRCUIT.wasm" "$INPUT_FILE" "$WITNESS_DIR/witness.wtns"
 
-# Generate proof
+# Generate proof (doc: groth16 prove zkey witness.wtns proof.json public.json)
 echo "Creating proof..."
 snarkjs groth16 prove "$SNARKJS_DIR/${CIRCUIT}_0001.zkey" "$WITNESS_DIR/witness.wtns" "$PROVER_DIR/proof.json" "$PROVER_DIR/public.json"
 
 echo ""
-echo "Proof saved to $PROVER_DIR/proof.json"
-echo "Public outputs saved to $PROVER_DIR/public.json"
-echo "To verify: ./verify.sh"
+echo "Proof: $PROVER_DIR/proof.json"
+echo "Public: $PROVER_DIR/public.json"
+echo "Verify: ./verify.sh"

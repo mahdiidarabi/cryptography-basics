@@ -4,22 +4,22 @@
  *
  * Hash definitions (match circuit):
  *   sn_produce = hash(rho || hash(sk_old))
- *   hashes[j]  = hash(r_old || sn_produce || v)
+ *   cm_list[j] = hash(r_old || sn_produce || v)
  *   sn_consume = hash(sn_produce || sk_old)
  *
  * Usage:
  *   node get_hash.js from-input [input.json]
- *     Read input.json, compute hash for hashes[j]. Print value to paste at hashes[j].
+ *     Read input.json, compute hash for cm_list[j]. Print value to paste at cm_list[j].
  *
  *   node get_hash.js complete-input [input.json] [--write]
- *     Read input.json, compute sn_consume and hashes[j], print full JSON.
+ *     Read input.json, compute sn_consume and cm_list[j], print full JSON.
  *     With --write: overwrite the file (fixes "Only 15 out of 16" witness error).
  *
  *   node get_hash.js chain <sk_old> <rho> <r_old> <v> <j> [v1]
  *     Full input (spending + pour). v1+v2=v; default v1=2. Output includes r1, rho1, v1, pk1, r2, rho2, v2, pk2.
  *
  *   node get_hash.js single <x>
- *     Compute Poseidon(x). Use for ad-hoc hashes.
+ *     Compute Poseidon(x). Use for ad-hoc hashing.
  *
  *   node get_hash.js random
  *     Print a random field element (for secrets).
@@ -75,10 +75,10 @@ async function main() {
     const sn_produce = poseidon([BigInt(rho), pk_old]);
     // sn_consume = hash(sn_produce || sk_old)
     const sn_consume = poseidon([sn_produce, BigInt(sk_old)]);
-    // hashes[j] = hash(r_old || sn_produce || v)
+    // cm_list[j] = hash(r_old || sn_produce || v)
     const hashAtJ = poseidon([BigInt(r_old), sn_produce, BigInt(v)]);
 
-    console.error(`Paste into hashes[${j}] in input.json:`);
+    console.error(`Paste into cm_list[${j}] in input.json:`);
     console.log(F.toString(hashAtJ));
     console.error(`Paste into sn_consume in input.json:\n${F.toString(sn_consume)}`);
     console.error(`sn_produce (for reference, not in input.json):\n${F.toString(sn_produce)}`);
@@ -116,11 +116,11 @@ async function main() {
     const sn_consume = poseidon([sn_produce, BigInt(sk_old)]);
     const hashAtJ = poseidon([BigInt(r_old), sn_produce, BigInt(v)]);
 
-    const hashes = Array.isArray(data.hashes) && data.hashes.length === 10 ? [...data.hashes] : Array(10).fill("0");
-    hashes[j] = F.toString(hashAtJ);
+    const cm_list = Array.isArray(data.cm_list) && data.cm_list.length === 10 ? [...data.cm_list] : Array(10).fill("0");
+    cm_list[j] = F.toString(hashAtJ);
 
     const complete = {
-      hashes,
+      cm_list,
       sn_consume: F.toString(sn_consume),
       v,
       j: String(j),
@@ -139,7 +139,7 @@ async function main() {
     const out = JSON.stringify(complete, null, 2);
     if (doWrite) {
       require("fs").writeFileSync(inputPath, out, "utf8");
-      console.error(`Wrote ${inputPath} with sn_consume and hashes[${j}] set.`);
+      console.error(`Wrote ${inputPath} with sn_consume and cm_list[${j}] set.`);
     } else {
       console.log(out);
     }
@@ -174,11 +174,11 @@ async function main() {
     const sn_consume = poseidon([sn_produce, BigInt(sk_old)]);
     const cm_j = poseidon([BigInt(r_old), sn_produce, BigInt(v)]);
 
-    const hashes = Array(10).fill("0");
-    hashes[j] = F.toString(cm_j);
+    const cm_list = Array(10).fill("0");
+    cm_list[j] = F.toString(cm_j);
 
     const input = {
-      hashes,
+      cm_list,
       sn_consume: F.toString(sn_consume),
       v,
       j: String(j),

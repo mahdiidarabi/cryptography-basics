@@ -8,13 +8,13 @@ Zero-knowledge proof built with **Circom** and **snarkjs**. The circuit combines
 
 1. **Spending:** You know private data (`v`, `j`, `r_old`, `sk_old`, `rho`) such that:
    - `sn_consume = hash(sn_produce || sk_old)` with `sn_produce = hash(rho || hash(sk_old))`
-   - The commitment `hash(r_old || sn_produce || v)` equals `hashes[j]` (the j‑th entry of a public list of 10 hashes).
+   - The commitment `hash(r_old || sn_produce || v)` equals `cm_list[j]` (the j‑th entry of a public list of 10 commitments).
 
 2. **Pour:** You know two output notes such that:
    - Total value is preserved: `v = v1 + v2` (with v1, v2 non‑negative).
    - Public outputs `cm1` and `cm2` are the correct commitments for the two notes.
 
-**Public inputs:** `hashes[10]`, `sn_consume`  
+**Public inputs:** `cm_list[10]`, `sn_consume`  
 **Public outputs:** `cm1`, `cm2`, `ok`  
 **Private:** `v`, `j`, `r_old`, `sk_old`, `rho`, and pour fields `r1`, `rho1`, `v1`, `pk1`, `r2`, `rho2`, `v2`, `pk2`.
 
@@ -110,13 +110,13 @@ Example (v=5, v1=2, v2=3):
 node get_hash.js chain 12345 12345 13751379 5 3 2 > input.json
 ```
 
-**Option B — fix an existing input.json** (recomputes hashes and sn_consume so the circuit is satisfied):
+**Option B — fix an existing input.json** (recomputes cm_list[j] and sn_consume so the circuit is satisfied):
 
 ```bash
 node get_hash.js complete-input input.json --write
 ```
 
-**Option C — edit input.json by hand.** Use `node get_hash.js from-input input.json` to print the correct `hashes[j]` and `sn_consume` to paste in.
+**Option C — edit input.json by hand.** Use `node get_hash.js from-input input.json` to print the correct `cm_list[j]` and `sn_consume` to paste in.
 
 ### 5. Generate the proof
 
@@ -140,10 +140,10 @@ Checks the proof against the verification key and public inputs/outputs. Prints 
 
 | Field        | Role     | Description |
 |-------------|----------|-------------|
-| `hashes`    | Public   | Array of 10 field elements (strings). Must satisfy spending constraint for `j`. |
+| `cm_list`   | Public   | Array of 10 field elements (strings). Must satisfy spending constraint for `j`. |
 | `sn_consume`| Public   | Serial number (consumed note). Must equal `hash(sn_produce \|\| sk_old)`. |
 | `v`         | Private  | Total value (e.g. `"5"`). |
-| `j`         | Private  | Index in 0–9 for which `hashes[j]` is the commitment. |
+| `j`         | Private  | Index in 0–9 for which `cm_list[j]` is the commitment. |
 | `r_old`     | Private  | Randomness for the spent note. |
 | `sk_old`    | Private  | Secret key for the spent note. |
 | `rho`       | Private  | Randomness for sn_produce. |
@@ -157,7 +157,7 @@ Checks the proof against the verification key and public inputs/outputs. Prints 
 | Command | Purpose |
 |--------|--------|
 | `chain <sk_old> <rho> <r_old> <v> <j> [v1]` | Print a full valid input (v1+v2=v; default v1=2). |
-| `from-input [input.json]` | Print `hashes[j]` and `sn_consume` (and sn_produce) to paste into input.json. |
+| `from-input [input.json]` | Print `cm_list[j]` and `sn_consume` (and sn_produce) to paste into input.json. |
 | `complete-input [input.json] [--write]` | Recompute spending fields; with `--write`, overwrites the file. Use if witness fails. |
 | `single <x>` | Compute Poseidon(x). |
 | `random` | Print a random field element. |
@@ -173,4 +173,4 @@ Checks the proof against the verification key and public inputs/outputs. Prints 
 | `./prove.sh`      | Build witness from `input.json`, then create proof → `prover/`. |
 | `./verify.sh`     | Verify `prover/proof.json` using `snarkjs/` and `prover/public.json`. |
 
-If the witness step fails (e.g. “Assert Failed”), run `node get_hash.js complete-input input.json --write` so that `hashes` and `sn_consume` match your private inputs, then run `./prove.sh` again.
+If the witness step fails (e.g. “Assert Failed”), run `node get_hash.js complete-input input.json --write` so that `cm_list` and `sn_consume` match your private inputs, then run `./prove.sh` again.
