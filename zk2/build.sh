@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
 # Compile the zcash_pour circuit. Run from zk2/
 #
-# Equivalent to Circom doc:
-#   circom zcash_pour.circom --r1cs --wasm --sym --c
+# Docs:
+#   https://docs.circom.io/getting-started/installation/
+#   https://docs.circom.io/getting-started/writing-circuits/
+#   https://docs.circom.io/getting-started/compiling-circuits/
+#
+# Original command (Compiling circuits):
+#   circom multiplier2.circom --r1cs --wasm --sym --c
+# Options: --r1cs (R1CS), --wasm (WASM witness), --sym (symbols), --c (C++ witness)
 set -e
 
 CIRCUIT=zcash_pour

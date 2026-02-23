@@ -1,9 +1,18 @@
 #!/usr/bin/env bash
-# Generate proof from input. Run from zk2/
+# Generate witness and Groth16 proof. Run from zk2/
 #
-# Equivalent to Circom doc (input.json or input_zcash_pour.json; proof/public in prover/):
-#   node zcash_pour_js/generate_witness.js zcash_pour_js/zcash_pour.wasm input.json witness.wtns
-#   snarkjs groth16 prove zcash_pour_0001.zkey witness.wtns proof.json public.json
+# Docs:
+#   https://docs.circom.io/getting-started/computing-the-witness/
+#   https://docs.circom.io/getting-started/proving-circuits/
+#
+# Computing the witness (doc):
+#   node generate_witness.js multiplier2.wasm input.json witness.wtns
+#   (run from multiplier2_js/; input.json has inputs in JSON, e.g. {"a":"3","b":"11"})
+#
+# Generating a proof (doc):
+#   snarkjs groth16 prove multiplier2_0001.zkey witness.wtns proof.json public.json
+#
+# Here: input from input.json or input_zcash_pour.json; proof/public written to prover/
 set -e
 
 CIRCUIT=zcash_pour

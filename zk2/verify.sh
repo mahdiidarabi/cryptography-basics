@@ -1,8 +1,13 @@
 #!/usr/bin/env bash
-# Verify proof. Run from zk2/
+# Verify Groth16 proof. Run from zk2/
 #
-# Equivalent to Circom doc (files in snarkjs/ and prover/):
+# Doc: https://docs.circom.io/getting-started/proving-circuits/
+#
+# Verifying a proof (doc):
 #   snarkjs groth16 verify verification_key.json public.json proof.json
+# Output: OK if valid. Uses verification_key.json, proof.json, public.json.
+#
+# Here: verification key from snarkjs/, proof and public from prover/
 set -e
 
 CIRCUIT=zcash_pour

@@ -1,9 +1,16 @@
 #!/usr/bin/env bash
-# Export Solidity verifier and calldata. Run from zk2/ after ./prove.sh
+# Export Solidity verifier and calldata for on-chain verification. Run from zk2/ after ./prove.sh
 #
-# Creates in prover/:
-#   verifier.sol   — Groth16 verifier contract
-#   calldata.json  — proof + public inputs as JSON (for verify() calldata)
+# Doc: https://docs.circom.io/getting-started/proving-circuits/ (Verifying from a Smart Contract)
+#
+# Export verifier (doc):
+#   snarkjs zkey export solidityverifier multiplier2_0001.zkey verifier.sol
+#
+# Generate call parameters for verifyProof (doc):
+#   snarkjs generatecall
+#   (run from directory containing proof.json and public.json; paste output into Remix)
+#
+# Here: verifier.sol and calldata.json are written to prover/
 set -e
 
 CIRCUIT=zcash_pour
